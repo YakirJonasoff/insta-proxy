@@ -27,6 +27,16 @@ app.get("/api/instagram/:metric", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch data", detail: err.message });
   }
 });
+app.get("/ig-user-insights", async (req, res) => {
+  try {
+    const response = await axios.get(`${LAMBDA_BASE_URL}ig-user-insights`, {
+      params: req.query,
+    });
+    res.json(response.data);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to proxy to Lambda", detail: err.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Proxy server running on port ${PORT}`);
