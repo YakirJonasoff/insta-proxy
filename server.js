@@ -36,6 +36,40 @@ app.get("/api/instagram/:metric", async (req, res) => {
   }
 });
 
+app.get("/ig-user-insights", async (req, res) => {
+  try {
+    console.log("↪️ Received request to /ig-user-insights");
+    console.log("Query params:", req.query);
+
+    const { metric, period, since, until } = req.query;
+
+    if (!metric || !period || !since || !until) {
+      console.error("❌ Missing required query parameters");
+      return res.status(400).json({ error: "Missing required query parameters" });
+    }
+
+    const token = process.env.IG_ACCESS_TOKEN;
+    if (!token) {
+      console.error("❌ Missing IG_ACCESS_TOKEN");
+      return res.status(500).json({ error: "Missing access token" });
+    }
+
+    const igUserId = "17841400020917423"; // או לשלוף דינאמית אם צריך
+    const url = `https://graph.facebook.com/v18.0/${igUserId}/insights?metric=${metric}&period=${period}&since=${since}&until=${until}&access_token=${token}`;
+
+    const response = await axios.get(url);
+
+    console.log("✅ Data fetched successfully");
+    res.json(response.data);
+  } catch (err) {
+    console.error("❌ Error in /ig-user-insights:", err.message);
+    if (err.response?.data) {
+      console.error("📄 Meta API Error:", JSON.stringify(err.response.data, null, 2));
+    }
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // Specific route for BASE44 integration: /ig-user-insights
 app.get("/ig-user-insights", async (req, res) => {
   try {
