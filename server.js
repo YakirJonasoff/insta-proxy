@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 3000;
 const LAMBDA_BASE_URL = "https://7a66a5m3s5fum5krjut3ltbv640iyohp.lambda-url.eu-central-1.on.aws/";
 
 app.use(cors());
+app.use(express.json());
 
 // Root route – Welcome message
 app.get("/", (req, res) => {
@@ -23,12 +24,7 @@ app.get("/api/instagram/:metric", async (req, res) => {
 
   try {
     const response = await axios.get(`${LAMBDA_BASE_URL}ig-user-insights`, {
-      params: {
-        metric,
-        period,
-        since,
-        until
-      },
+      params: { metric, period, since, until },
     });
     res.json(response.data);
   } catch (err) {
@@ -36,6 +32,7 @@ app.get("/api/instagram/:metric", async (req, res) => {
   }
 });
 
+// Direct Meta API route (for BASE44 and manual calls)
 app.get("/ig-user-insights", async (req, res) => {
   try {
     console.log("↪️ Received request to /ig-user-insights");
@@ -43,9 +40,9 @@ app.get("/ig-user-insights", async (req, res) => {
 
     const { metric, period, since, until } = req.query;
 
-    if (!metric || !period || !since || !until) {
-      console.error("❌ Missing required query parameters");
-      return res.status(400).json({ error: "Missing required query parameters" });
+    if (!metric || !period) {
+      console.error("❌ Missing required query parameters: metric or period");
+      return res.status(400).json({ error: "Missing required query parameters: metric or period" });
     }
 
     const token = process.env.IG_ACCESS_TOKEN;
@@ -54,12 +51,13 @@ app.get("/ig-user-insights", async (req, res) => {
       return res.status(500).json({ error: "Missing access token" });
     }
 
-    const igUserId = "17841400020917423"; // או לשלוף דינאמית אם צריך
-    const url = `https://graph.facebook.com/v18.0/${igUserId}/insights?metric=${metric}&period=${period}&since=${since}&until=${until}&access_token=${token}`;
+    const igUserId = "17841400020917423";
+    let url = `https://graph.facebook.com/v18.0/${igUserId}/insights?metric=${metric}&period=${period}&access_token=${token}`;
+    if (since) url += `&since=${since}`;
+    if (until) url += `&until=${until}`;
 
     const response = await axios.get(url);
-
-    console.log("✅ Data fetched successfully");
+    console.log("✅ Data fetched successfully from Meta");
     res.json(response.data);
   } catch (err) {
     console.error("❌ Error in /ig-user-insights:", err.message);
@@ -70,8 +68,8 @@ app.get("/ig-user-insights", async (req, res) => {
   }
 });
 
-// Specific route for BASE44 integration: /ig-user-insights
-app.get("/ig-user-insights", async (req, res) => {
+// Optional: fallback proxy to Lambda for /ig-user-insights (if needed)
+app.get("/proxy-lambda/ig-user-insights", async (req, res) => {
   try {
     const response = await axios.get(`${LAMBDA_BASE_URL}ig-user-insights`, {
       params: req.query,
