@@ -16,7 +16,6 @@ COPY . .
 # חשוף את הפורט 3000
 EXPOSE 3000
 
-ENV IG_ACCESS_TOKEN=17841400020917423
 # הפעל את השרת
 CMD [ "node", "server.js" ]
 
